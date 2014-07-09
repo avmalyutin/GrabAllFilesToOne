@@ -15,22 +15,22 @@ import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JTextPane;
 import java.awt.List;
+import javax.swing.AbstractListModel;
 
 
 public class MainWindow {
 
 	private JFrame frame;
 	
-	private JFileChooser chooser;
+	private final DefaultListModel<String> listModel = new DefaultListModel<String>();
 	
-	private JList<String> list;
+	private JList<String> listOfFiles;
+	
+	private JFileChooser fileChooser;
 	
 	private File folder;
 	
-	ArrayList<File> currentFiles;
-	List list_1;
-
-	private DefaultListModel<String> model;
+	private ArrayList<File> currentFiles;
 
 	/**
 	 * Launch the application.
@@ -60,80 +60,63 @@ public class MainWindow {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 300);
+		frame.setBounds(100, 100, 300, 400);
+		frame.setResizable(false);
+		frame.setTitle("GrabAllFilesToOne");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
-		JButton btnSelectFiles = new JButton("Select files");
+		JButton btnSelectFiles = new JButton("Select folder");
 		btnSelectFiles.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
-				
-				chooser = new JFileChooser(); 
-			    chooser.setCurrentDirectory(new java.io.File("."));
-			    chooser.setDialogTitle("Select folder");
-			    chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				fileChooser = new JFileChooser(); 
+			    fileChooser.setCurrentDirectory(new java.io.File("."));
+			    fileChooser.setDialogTitle("Select folder");
+			    fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			    //
 			    // disable the "All files" option.
 			    //
-			    chooser.setAcceptAllFileFilterUsed(false);
+			    fileChooser.setAcceptAllFileFilterUsed(false);
 			    //    
-			    if (chooser.showOpenDialog(chooser) == JFileChooser.APPROVE_OPTION) { 
+			    if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION) { 
 			      System.out.println("getCurrentDirectory(): " 
-			         +  chooser.getCurrentDirectory());
+			         +  fileChooser.getCurrentDirectory());
 			      System.out.println("getSelectedFile() : " 
-			         +  chooser.getSelectedFile());
-			      folder = chooser.getSelectedFile();
+			         +  fileChooser.getSelectedFile());
+			      folder = fileChooser.getSelectedFile();
 			      }
 			    else {
 			    	folder = null;
-			      System.out.println("No Selection ");
+			    	System.out.println("No Selection ");
 			      }
 				
 				
-			    
-			    list_1.removeAll();
-			    
-			    currentFiles = MainWindow.this.getAllFiles(folder);
-			    
-			    System.out.print(currentFiles.get(1).getName());
-			    
+			    listModel.removeAllElements();
+			    currentFiles = MainWindow.this.getAllFiles(folder);			    
 			    for(File buffer : currentFiles){
-			    	
-			    	list_1.add(buffer.getName());	
+			    	listModel.addElement(buffer.getName());
 			    }
 			    
-			    
+			    listOfFiles.setModel(listModel);
 				
 			}
 		});
-		btnSelectFiles.setBounds(10, 11, 178, 23);
+		btnSelectFiles.setBounds(10, 11, 264, 23);
 		frame.getContentPane().add(btnSelectFiles);
 		
 		JTextPane txtpnSelectedFiles = new JTextPane();
-		txtpnSelectedFiles.setText("Selected files:");
-		txtpnSelectedFiles.setBounds(10, 45, 89, 20);
+		txtpnSelectedFiles.setText("Files in folder:");
+		txtpnSelectedFiles.setEditable(false);
+		txtpnSelectedFiles.setBounds(10, 45, 264, 20);
 		frame.getContentPane().add(txtpnSelectedFiles);
 		
-		list = new JList<String>();
-		list.setBounds(10, 236, 116, -140);
-		model = new DefaultListModel<String>();
-		list.setModel(model);
-		frame.getContentPane().add(list);
-		
-		JButton btnSaveIntoOne = new JButton("Save into one folder");
+		JButton btnSaveIntoOne = new JButton("Save into one file");
 		btnSaveIntoOne.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				
-				byte[] fileArray;
-				
+								
 				String path = null;
-				
-					path = currentFiles.get(0).getParentFile()+"\\general.txt";
-				
-				
-				System.out.println("Path:" + path);
-				
+				path = currentFiles.get(0).getParentFile()+"\\generalFile.txt";				
 				File generalFile = new File(path);
 				
 				
@@ -162,12 +145,12 @@ public class MainWindow {
 				}
 			}
 		});
-		btnSaveIntoOne.setBounds(268, 228, 156, 23);
+		btnSaveIntoOne.setBounds(10, 328, 264, 23);
 		frame.getContentPane().add(btnSaveIntoOne);
 		
-		list_1 = new List();
-		list_1.setBounds(10, 71, 178, 159);
-		frame.getContentPane().add(list_1);
+		listOfFiles = new JList<String>();
+		listOfFiles.setBounds(10, 76, 264, 241);
+		frame.getContentPane().add(listOfFiles);
 	}
 	
 	
@@ -184,39 +167,22 @@ public class MainWindow {
 	
 	
 	private byte[] readFile(File file){
-		
-		
+
 		byte [] returnValue = new byte[(int) file.length()];
 		
 		FileInputStream inputStream;
 		int total = 0;
 		try {
 			inputStream = new FileInputStream(file);
-		
-
-            // read fills buffer with data and returns
-            // the number of bytes read (which of course
-            // may be less than the buffer size, but
-            // it will never be more).
-            
             int nRead = 0;
             while((nRead = inputStream.read(returnValue)) != -1) {
-                // Convert to String so we can display it.
-                // Of course you wouldn't want to do this with
-                // a 'real' binary file.
-               // System.out.println(new String(returnValue));
                 total += nRead;
             }	
 
-            // Always close files.
             inputStream.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-            System.out.println("Read " + total + " bytes");
-		
 		return returnValue;
 		
 	}
@@ -226,28 +192,10 @@ public class MainWindow {
 	
 	private void writeToFile(FileOutputStream outputStream, byte[] array){
 		try{
-                        // write() writes as many bytes from the buffer
-            // as the length of the buffer. You can also
-            // use
-            // write(buffer, offset, length)
-            // if you want to write a specific number of
-            // bytes, or only part of the buffer.
             outputStream.write(array);
-		
-
-            System.out.println("Wrote " + array.length + 
-                " bytes");
         }
         catch(IOException ex) {
-            System.out.println(
-                "Error writing file '"
-                +  "'");
-            // Or we could just do this:
-             ex.printStackTrace();
+            ex.printStackTrace();
         }
-		
-		
-		
-		
 	}
 }
