@@ -11,4 +11,4 @@ The code is not ideal, so you're welcome to critic it. :-)
 What's next?
 ================
 I want to implement some basic features:
-1) Make a selection for list. Only files, which are selected, will be merged
+- Make a selection for list. Only files, which are selected, will be merged
