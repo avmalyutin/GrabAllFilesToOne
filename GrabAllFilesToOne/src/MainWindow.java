@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.prefs.Preferences;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -14,8 +15,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JTextPane;
-import java.awt.List;
-import javax.swing.AbstractListModel;
+import javax.swing.JCheckBox;
 
 
 public class MainWindow {
@@ -28,9 +28,13 @@ public class MainWindow {
 	
 	private JFileChooser fileChooser;
 	
+	private JCheckBox chckbxGrabFilesFrom;
+	
 	private File folder;
 	
 	private ArrayList<File> currentFiles;
+	
+	private String LAST_USED_FOLDER = "LAST_USED_FOLDER";
 
 	/**
 	 * Launch the application.
@@ -71,12 +75,13 @@ public class MainWindow {
 			public void actionPerformed(ActionEvent e) {
 				
 				fileChooser = new JFileChooser(); 
-			    fileChooser.setCurrentDirectory(new java.io.File("."));
+				
+				Preferences prefs = Preferences.userRoot().node(getClass().getName());
+				
+			    fileChooser.setCurrentDirectory(new java.io.File(prefs.get(LAST_USED_FOLDER, new File(".").getAbsolutePath())));
 			    fileChooser.setDialogTitle("Select folder");
 			    fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			    //
-			    // disable the "All files" option.
-			    //
+			
 			    fileChooser.setAcceptAllFileFilterUsed(false);
 			    //    
 			    if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION) { 
@@ -85,6 +90,9 @@ public class MainWindow {
 			      System.out.println("getSelectedFile() : " 
 			         +  fileChooser.getSelectedFile());
 			      folder = fileChooser.getSelectedFile();
+			      
+			      prefs.put(LAST_USED_FOLDER, folder.getAbsolutePath());
+			      
 			      }
 			    else {
 			    	folder = null;
@@ -93,9 +101,19 @@ public class MainWindow {
 				
 				
 			    listModel.removeAllElements();
-			    currentFiles = MainWindow.this.getAllFiles(folder);			    
+			    currentFiles = new ArrayList<File>();
+			    
+			    if(MainWindow.this.chckbxGrabFilesFrom.isSelected()){
+				    MainWindow.this.getAllFilesWithSubfolders(folder.getAbsolutePath(), currentFiles);
+			    }
+			    else{
+			    	MainWindow.this.getAllFiles(currentFiles);
+			    }
+			    
+			    
+			    System.out.println("You shall not pass: " + folder.getAbsolutePath());
 			    for(File buffer : currentFiles){
-			    	listModel.addElement(buffer.getName());
+			    	listModel.addElement(buffer.getName() + " in " + buffer.getAbsolutePath());
 			    }
 			    
 			    listOfFiles.setModel(listModel);
@@ -131,9 +149,6 @@ public class MainWindow {
 				for(File file1 : currentFiles){
 									
 					 MainWindow.this.writeToFile(outputStream, MainWindow.this.readFile(file1));
-					 String bytes = "\n\n\n\n";
-					 byte[] buffer1 = bytes.getBytes();
-					 MainWindow.this.writeToFile(outputStream, buffer1);
 					
 				}
 				
@@ -149,23 +164,41 @@ public class MainWindow {
 		frame.getContentPane().add(btnSaveIntoOne);
 		
 		listOfFiles = new JList<String>();
-		listOfFiles.setBounds(10, 76, 264, 241);
+		listOfFiles.setBounds(10, 98, 264, 219);
 		frame.getContentPane().add(listOfFiles);
-	}
-	
-	
-	
-	
-	private ArrayList<File> getAllFiles(File folder){
-		ArrayList<File> buf = new ArrayList<File>();
-		for(File buffer: folder.listFiles()){
-			buf.add(buffer);			
-		}
 		
-		return buf;
+		chckbxGrabFilesFrom = new JCheckBox("Grab files from subfolders?");
+		chckbxGrabFilesFrom.setBounds(10, 74, 264, 23);
+		frame.getContentPane().add(chckbxGrabFilesFrom);
 	}
 	
 	
+	
+	
+	private void getAllFiles(ArrayList<File> files){
+		for(File buffer: folder.listFiles()){
+			if(buffer.isFile())
+				files.add(buffer);			
+		}
+	}
+	
+	
+	private void getAllFilesWithSubfolders(String directoryName, ArrayList<File> files) {
+	    File directory = new File(directoryName);
+
+	    // get all the files from a directory
+	    File[] fList = directory.listFiles();
+	    if(fList != null)
+		    for (File file : fList) {
+		        if (file.isFile()) {
+		            files.add(file);
+		        } else if (file.isDirectory()) {
+		        	getAllFilesWithSubfolders(file.getAbsolutePath(), files);
+		        }
+		    }
+	}
+	
+
 	private byte[] readFile(File file){
 
 		byte [] returnValue = new byte[(int) file.length()];
@@ -187,9 +220,7 @@ public class MainWindow {
 		
 	}
 	
-	
-	
-	
+
 	private void writeToFile(FileOutputStream outputStream, byte[] array){
 		try{
             outputStream.write(array);
